@@ -1,0 +1,21 @@
+{
+  "name": "urban-explorer-native-app",
+  "version": "1.0.0",
+  "main": "server/app.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Farid Wilhelm Zimmermann",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikarus93/urban-explorer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ikarus93/urban-explorer/issues"
+  },
+  "homepage": "https://github.com/ikarus93/urban-explorer#readme",
+  "description": ""
+}
