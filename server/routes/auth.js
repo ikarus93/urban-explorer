@@ -9,21 +9,27 @@ const express = require('express'),
 router.post('/signup', (req, res, next) => {
     //Creates User entry in user table
     const [name, email, password] = [req.body.name, req.body.email, req.body.password];
-    console.log(req.body);
-    const client = connection("ubuntu", dbUserPassword);
+    const client = connection('ubuntu', dbUserPassword);
     
     (async () => {
         
         await client.connect();
         let hash = await hashPassword(password);
-        const res = await client.query("INSERT INTO users(name, password, email) VALUES($1,$2,$3)", [name, hash, email]);
+        await client.query("INSERT INTO users(name, password, email) VALUES($1,$2,$3)", [name, hash, email]);
     
-        res.json({type: "success", status: 200, message: "You've successfully signed up"});
+        res.json({type: 'success', status: 200, message: 'You\'ve successfully signed up'});
     })().catch(e => {
+        let err;
+        if (e.code === '23502') {
+            err = new Error('Username or Email already exists');
+            err.status = 409;
+            err.type = 'Duplicate Error';
+        } else {
+            err = new Error('Error handling database request');
+            err.status = 500;
+            err.type = 'Database Error';
+        }
         
-        const err = new Error("Error handling database request");
-        err.status = 500;
-        err.type = "Database Error";
         return next(err);
         
     })
@@ -35,36 +41,40 @@ router.post('/login', (req, res, next) => {
     
     const [user, password] = [req.body.user, req.body.password];
     const client = connection("ubuntu", dbUserPassword);
-    let q = isValidEmail(user) ? "email" : "name";
+    
+    //Check whether the request was made with email or username
+    let q = isValidEmail(user) ? "SELECT * from users WHERE email=$1" : "SELECT * from users WHERE name=$1";
     
     (async () => {
         
         await client.connect();
-        const res = await client.query("SELECT * from users WHERE $1=$2", [q, req.body.user]);
-        let passwordsMatch = await comparePasswords(req.body.password, res[0][password]);
+        const result = await client.query(q, [req.body.user]);
         
+        if (!result.rows) {
+            //if username or email is not found
+            const err = new Error('Username or Email doesn\'t exist');
+            err.status = 422;
+            err.type = 'Unprocessable Entity';
+            return next(err);
+        }
+        
+        let passwordsMatch = await comparePasswords(req.body.password, result.rows[0].password);
         if (passwordsMatch) {
-            res.json({type: "success", status: 200, message: "You've successfully logged in"});
+            res.json({type: 'success', status: 200, message: 'You\'ve successfully logged in'});
         } else {
             const err = new Error(`${q.toUpperCase()} and Password don't match.`);
             err.status = 403;
-            err.type = "Authentication Error";
+            err.type = 'Authentication Error';
             return next(err);
         }
         
     })().catch(e => {
-        
-        const err = new Error("Error handling database request");
+        const err = new Error('Error handling database request');
         err.status = 500;
-        err.type = "Database Error";
+        err.type = 'Database Error';
         return next(err);
         
     });
 })
-
-router.post("/signup", (req, res, next) => {
-    
-})
-
 
 module.exports = router;
