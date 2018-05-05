@@ -2,22 +2,49 @@
 
 const express = require('express'),
       router = express.Router(),
-      { dbUserPassword } = require('../../config'),
+      { dbUserPassword, jwtSecret } = require('../../config'),
       connection = require('../db/connection'),
-      { isValidEmail, hashPassword, comparePasswords } = require('../helpers/helpers');
+      { isValidEmail, hashPassword, comparePasswords } = require('../helpers/helpers'),
+      jwt = require('jsonwebtoken'),
+      passport = require('passport'),
+      passportJWT = require('passport-jwt');
+      
+//===Passport Authentication Options===//   
+let ExtractJwt = passportJWT.ExtractJwt;
+let JwtStrategy = passportJWT.Strategy;
+
+const jwtOptions = {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: jwtSecret
+}
+let strategy = new JwtStrategy(jwtOptions, (payload, next) => {
+    const client = connection('ubuntu', dbUserPassword);
+    console.log("JOO")
+   return (async () => {
+        await client.connect();
+        let result = await client.query("SELECT TOP 1 id FROM users WHERE id = $1", [payload.id]);
+        console.log(result)
+        if (result.rows) {
+            return next(null, result);
+        } else {
+           return  next(null, false);
+        }
+    })
+})
+passport.use(strategy);
+
 
 router.post('/signup', (req, res, next) => {
     //Creates User entry in user table
     const [name, email, password] = [req.body.name, req.body.email, req.body.password];
     const client = connection('ubuntu', dbUserPassword);
-    
     (async () => {
         
         await client.connect();
         let hash = await hashPassword(password);
         await client.query("INSERT INTO users(name, password, email) VALUES($1,$2,$3)", [name, hash, email]);
     
-        res.json({type: 'success', status: 200, message: 'You\'ve successfully signed up'});
+        res.json({type: 'success', status: 200, message: 'You\'ve successfully signed up', data: {}});
     })().catch(e => {
         let err;
         if (e.code === '23502') {
@@ -38,7 +65,6 @@ router.post('/signup', (req, res, next) => {
 
 router.post('/login', (req, res, next) => {
     //Validates user is in database and creates session token
-    
     const [user, password] = [req.body.user, req.body.password];
     const client = connection("ubuntu", dbUserPassword);
     
@@ -57,10 +83,12 @@ router.post('/login', (req, res, next) => {
             err.type = 'Unprocessable Entity';
             return next(err);
         }
-        
+        console.log(result.rows[0].id)
         let passwordsMatch = await comparePasswords(req.body.password, result.rows[0].password);
         if (passwordsMatch) {
-            res.json({type: 'success', status: 200, message: 'You\'ve successfully logged in'});
+            //sign jwt with retrieved user id
+            const token = jwt.sign({id: result.rows[0].id}, jwtOptions.secretOrKey);
+            res.json({type: 'success', status: 200, message: 'You\'ve successfully logged in', data: {token: token}});
         } else {
             const err = new Error(`${q.toUpperCase()} and Password don't match.`);
             err.status = 403;
@@ -75,6 +103,10 @@ router.post('/login', (req, res, next) => {
         return next(err);
         
     });
+})
+
+router.get('/status', passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    res.json("OK")
 })
 
 module.exports = router;
