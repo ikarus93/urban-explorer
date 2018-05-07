@@ -19,17 +19,24 @@ const jwtOptions = {
 }
 let strategy = new JwtStrategy(jwtOptions, (payload, next) => {
     const client = connection('ubuntu', dbUserPassword);
-    console.log("JOO")
-   return (async () => {
-        await client.connect();
-        let result = await client.query("SELECT TOP 1 id FROM users WHERE id = $1", [payload.id]);
-        console.log(result)
-        if (result.rows) {
-            return next(null, result);
+    client.connect();
+    client.query("SELECT * FROM users WHERE id = $1", [payload.id], (err, res) => {
+        if (res.rows) {
+            return next(null, res);
         } else {
            return  next(null, false);
         }
-    })
+    }); 
+  /*  (async () => {
+        console.log("here")
+        await client.connect();
+        let result = await client.query("SELECT TOP 1 id FROM users WHERE id = $1", [payload.id]);
+        if (result.rows) {
+             next(null, result);
+        } else {
+             next(null, false);
+        }
+    }) */
 })
 passport.use(strategy);
 
@@ -83,14 +90,13 @@ router.post('/login', (req, res, next) => {
             err.type = 'Unprocessable Entity';
             return next(err);
         }
-        console.log(result.rows[0].id)
         let passwordsMatch = await comparePasswords(req.body.password, result.rows[0].password);
         if (passwordsMatch) {
             //sign jwt with retrieved user id
             const token = jwt.sign({id: result.rows[0].id}, jwtOptions.secretOrKey);
-            res.json({type: 'success', status: 200, message: 'You\'ve successfully logged in', data: {token: token}});
+            return res.json({type: 'success', status: 200, message: 'You\'ve successfully logged in', data: {token: token}});
         } else {
-            const err = new Error(`${q.toUpperCase()} and Password don't match.`);
+            const err = new Error(`Username and Password don't match.`);
             err.status = 403;
             err.type = 'Authentication Error';
             return next(err);
@@ -106,6 +112,7 @@ router.post('/login', (req, res, next) => {
 })
 
 router.get('/status', passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    console.log("here")
     res.json("OK")
 })
 
