@@ -27,16 +27,7 @@ let strategy = new JwtStrategy(jwtOptions, (payload, next) => {
            return  next(null, false);
         }
     }); 
-  /*  (async () => {
-        console.log("here")
-        await client.connect();
-        let result = await client.query("SELECT TOP 1 id FROM users WHERE id = $1", [payload.id]);
-        if (result.rows) {
-             next(null, result);
-        } else {
-             next(null, false);
-        }
-    }) */
+
 })
 passport.use(strategy);
 
@@ -50,7 +41,6 @@ router.post('/signup', (req, res, next) => {
         await client.connect();
         let hash = await hashPassword(password);
         await client.query("INSERT INTO users(name, password, email) VALUES($1,$2,$3)", [name, hash, email]);
-    
         res.json({type: 'success', status: 200, message: 'You\'ve successfully signed up', data: {}});
     })().catch(e => {
         let err;
@@ -77,13 +67,11 @@ router.post('/login', (req, res, next) => {
     
     //Check whether the request was made with email or username
     let q = isValidEmail(user) ? "SELECT * from users WHERE email=$1" : "SELECT * from users WHERE name=$1";
-    
     (async () => {
         
         await client.connect();
         const result = await client.query(q, [req.body.user]);
-        
-        if (!result.rows) {
+        if (!result.rows.length) {
             //if username or email is not found
             const err = new Error('Username or Email doesn\'t exist');
             err.status = 422;
@@ -103,6 +91,7 @@ router.post('/login', (req, res, next) => {
         }
         
     })().catch(e => {
+        console.log(e);
         const err = new Error('Error handling database request');
         err.status = 500;
         err.type = 'Database Error';
@@ -112,7 +101,6 @@ router.post('/login', (req, res, next) => {
 })
 
 router.get('/status', passport.authenticate('jwt', {session: false}), (req, res, next) => {
-    console.log("here")
     res.json("OK")
 })
 

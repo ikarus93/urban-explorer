@@ -6,16 +6,21 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-export default class Welcome extends Component {
+
+export default class WelcomePage extends Component {
   render() {
+    const { navigate } = this.props.navigation;
     return (
       <View style={styles.container}>
         <Text style={styles.welcomeText}>Welcome to urbanXPlorer</Text>
         <View style={styles.optionsContainer}>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={() => {
+              navigate("Login");
+            }}>
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={() => {
+              navigate("Signup"); }}>
               <Text style={styles.buttonText}>Signup</Text>
             </TouchableOpacity>
         </View>
@@ -24,8 +29,6 @@ export default class Welcome extends Component {
   }
 }
 
-
-//===Styles===//
 const styles = StyleSheet.create({
   container: {
     flex: 1,
