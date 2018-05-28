@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-
+import { Actions } from 'react-native-router-flux';
 
 export default class WelcomePage extends Component {
   render() {
@@ -15,12 +15,12 @@ export default class WelcomePage extends Component {
         <Text style={styles.welcomeText}>Welcome to urbanXPlorer</Text>
         <View style={styles.optionsContainer}>
             <TouchableOpacity style={styles.button} onPress={() => {
-              navigate("Login");
+              Actions.loginPage();
             }}>
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={() => {
-              navigate("Signup"); }}>
+              Actions.signupPage(); }}>
               <Text style={styles.buttonText}>Signup</Text>
             </TouchableOpacity>
         </View>

@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { Text, View, StyleSheet, TextInput } from 'react-native';
+import { Text, View, StyleSheet, TextInput, AsyncStorage } from 'react-native';
 import { Button } from 'react-native-elements';
 import Expo from 'expo';
-//import FloatLabelTextInput from 'react-native-floating-label-text-input';
+import { Actions } from 'react-native-router-flux';
 
 export default class SignupPage extends Component {
   constructor(props) {
@@ -15,10 +15,10 @@ export default class SignupPage extends Component {
       usernameEmailOccupied: false,
       requestError: false
     };
-    this.loginRequest = this.loginRequest.bind(this);
+    this.signupRequest = this.signupRequest.bind(this);
     this.setCredentialsInKeychain = this.setCredentialsInKeychain.bind(this);
   }
-   loginRequest() {
+   signupRequest() {
     if (this.state.username && this.state.email && this.state.password) {
    fetch(
         'https://urban-explorer-atheos.c9users.io/auth/signup', {
@@ -35,7 +35,6 @@ export default class SignupPage extends Component {
 
       }).then(res => {
         if (res.status === 200) {
-          console.log("here")
        this.setCredentialsInKeychain();
         } else {
           return Promise.reject(res);
@@ -51,7 +50,7 @@ export default class SignupPage extends Component {
     }
   }
   
-  setCredentialsInKeychain() {
+   setCredentialsInKeychain() {
     //Saves Credentials to Android Keychain and navigates to main user page 
     
     //sent authentication request to acquire token to log user in and save in secure storage
@@ -64,13 +63,15 @@ export default class SignupPage extends Component {
         headers: new Headers({'content-type': 'application/json'}),
         method: 'POST'
       }).then(res => {
-         return res.json()
+        return res.json()
         }).then(res => {
           if (res.status === 200) {
             //save token to secure storage
-      Expo.SecureStore.setItemAsync(this.state.username, res.data.token).then(() => {
-      const { navigate } = this.props.navigation;
-      navigate("User");
+        
+      Expo.SecureStore.setItemAsync(this.state.username, res.data.token).then(async () => {
+              await AsyncStorage.setItem('registeredUser', this.state.username);
+
+      Actions.home();
       })
         this.setState({loading: false});
         } else {
@@ -121,7 +122,7 @@ export default class SignupPage extends Component {
           }}
           titleStyle={{}}
           loading={this.state.loading}
-          onPress={this.loginRequest}
+          onPress={this.signupRequest}
         />
         {this.state.usernameEmailOccupied ? <Text>Username or Email are already in use. Please try again</Text> : <Text></Text>}
       </View>

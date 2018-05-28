@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { Text, View, StyleSheet, TextInput } from 'react-native';
+import { Text, View, StyleSheet, TextInput, AsyncStorage } from 'react-native';
 import { Button } from 'react-native-elements';
 import Expo from 'expo';
-//import FloatLabelTextInput from 'react-native-floating-label-text-input';
+import { Actions } from 'react-native-router-flux';
 
 export default class LoginPage extends Component {
   constructor(props) {
@@ -51,12 +51,16 @@ export default class LoginPage extends Component {
     }
   }
   
-  setCredentialsInKeychain(token) {
+  async setCredentialsInKeychain(token) {
     //Saves Credentials to Android Keychain and navigates to main user page 
-    Expo.SecureStore.setItemAsync(this.state.username, token).then(() => {
+    await AsyncStorage.setItem(this.state.username, token)
+    console.log("here")
+    await AsyncStorage.setItem('registeredUser', this.state.username);
+    /*Expo.SecureStore.setItemAsync(this.state.username, token).then(() => {
       const { navigate } = this.props.navigation;
       navigate("User");
-    })
+    })*/
+    Actions.home();
   }
   
   render() {
